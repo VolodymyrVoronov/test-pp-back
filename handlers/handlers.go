@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"test-pp-back/models"
 	"time"
@@ -110,10 +109,8 @@ func VerifyHandler(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(secret, otp)
-
 	if totp.Validate(otp, secret) {
-		c.JSON(http.StatusOK, gin.H{"message": "Verification successful"})
+		c.JSON(http.StatusOK, gin.H{"message": "Verification successful", "username": claims.Username})
 	} else {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
 	}
@@ -135,5 +132,5 @@ func CheckAuthHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Authenticated", "username": claims.Username})
+	c.JSON(http.StatusOK, gin.H{"message": "Authenticated"})
 }
