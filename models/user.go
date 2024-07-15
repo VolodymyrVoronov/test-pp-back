@@ -15,3 +15,4 @@ type Claims struct {
 }
 
 var Users = map[string]string{} // A simple in-memory user store
+var TotpSecrets = map[string]string{}

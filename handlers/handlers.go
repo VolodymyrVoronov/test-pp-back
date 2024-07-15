@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"test-pp-back/models"
 	"time"
@@ -16,6 +17,12 @@ func RegisterHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
+
+	if _, ok := models.Users[creds.Username]; ok {
+		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+		return
+	}
+
 	models.Users[creds.Username] = creds.Password
 
 	// Generate a TOTP secret for the user
@@ -29,6 +36,8 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	// Store the secret securely
+	models.TotpSecrets[creds.Username] = secret.Secret()
+
 	// For this example, we'll send it back in the response (not secure)
 	c.JSON(http.StatusOK, gin.H{"secret": secret.Secret()})
 }
@@ -37,6 +46,11 @@ func LoginHandler(c *gin.Context) {
 	var creds models.Credentials
 	if err := c.BindJSON(&creds); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if _, ok := models.Users[creds.Username]; !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
@@ -61,8 +75,15 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
+	// Generate OTP
+	otp, err := totp.GenerateCode(models.TotpSecrets[creds.Username], time.Now())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating OTP"})
+		return
+	}
+
 	c.SetCookie("token", tokenString, 300, "/", "localhost", false, true)
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	c.JSON(http.StatusOK, gin.H{"token": tokenString, "otp": otp})
 }
 
 func VerifyHandler(c *gin.Context) {
@@ -83,7 +104,13 @@ func VerifyHandler(c *gin.Context) {
 	}
 
 	// Retrieve the user's secret (in a real app, fetch this from your database)
-	secret := "" // replace with the actual secret
+	secret, ok := models.TotpSecrets[claims.Username]
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving secret"})
+		return
+	}
+
+	fmt.Println(secret, otp)
 
 	if totp.Validate(otp, secret) {
 		c.JSON(http.StatusOK, gin.H{"message": "Verification successful"})
