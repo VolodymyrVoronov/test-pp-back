@@ -1,10 +1,16 @@
 package utils
 
 import (
+	"fmt"
+	"io"
+	"os"
 	"strings"
 	"test-pp-back/models"
 	"time"
 
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
 	"gonum.org/v1/gonum/floats"
 )
 
@@ -77,4 +83,94 @@ func PredictPricesForGivenDays(slope, intercept, lastDate float64, days int) []m
 	}
 
 	return predictions
+}
+
+func DrawStockGraph(stocks []models.StockData) *charts.Kline {
+	kline := charts.NewKLine()
+
+	var adjustedStockData []models.AdjustedStockData
+
+	for _, stock := range stocks {
+		date, err := time.Parse("2006-01-02", stock.Date)
+		if err != nil {
+			fmt.Println("Error parsing date:", err)
+			continue
+		}
+
+		formattedDate := date.Format("2006/1/2")
+
+		newStockData := models.AdjustedStockData{
+			Date: formattedDate,
+			Data: [4]float64{stock.Open, stock.High, stock.Low, stock.Close},
+		}
+
+		adjustedStockData = append(adjustedStockData, newStockData)
+	}
+
+	x := make([]string, 0)
+	y := make([]opts.KlineData, 0)
+	for i := 0; i < len(adjustedStockData); i++ {
+		x = append(x, adjustedStockData[i].Date)
+		y = append(y, opts.KlineData{Value: adjustedStockData[i].Data})
+	}
+
+	kline.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: "Stock Graph",
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			SplitNumber: 20,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Scale: opts.Bool(true),
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "inside",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "slider",
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+	)
+
+	// kline.SetXAxis(x).AddSeries("kline", y)
+
+	return kline
+}
+
+func CreateGraphFile(stocks []models.StockData) error {
+	page := components.NewPage()
+
+	page.AddCharts(
+		DrawStockGraph(stocks),
+	)
+
+	dynamicFileName := time.Now().Format("2006-01-02_15-04-05")
+	graphFileName := fmt.Sprintf("graphs/%s.html", dynamicFileName)
+
+	files, err := os.ReadDir("graphs")
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		os.Remove(fmt.Sprintf("graphs/%s", f.Name()))
+	}
+
+	file, err := os.Create(graphFileName)
+	if err != nil {
+		fmt.Println(err)
+
+		return err
+	}
+	// defer file.Close()
+
+	page.Render(io.MultiWriter(file))
+
+	return nil
 }

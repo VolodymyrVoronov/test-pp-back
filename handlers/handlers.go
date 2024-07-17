@@ -152,6 +152,12 @@ func CreatePredictionHandler(c *gin.Context) {
 		return
 	}
 
+	error := utils.CreateGraphFile(stockRequest.Stocks)
+	if error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating graph file"})
+		return
+	}
+
 	dates, closingPrices, err := utils.ExtractData(stockRequest.Stocks)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error extracting data"})
