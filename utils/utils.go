@@ -90,8 +90,6 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 
 	var adjustedStockData []models.AdjustedStockData
 
-	// parse this "2006-01-02" or "2006/01/02"
-
 	for _, stock := range stocks {
 		formatToParse := "2006-01-02"
 
