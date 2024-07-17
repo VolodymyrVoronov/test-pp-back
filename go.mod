@@ -4,7 +4,6 @@ go 1.22.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/go-echarts/go-echarts v1.0.0
 	github.com/go-echarts/go-echarts/v2 v2.4.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/pquerna/otp v1.4.0

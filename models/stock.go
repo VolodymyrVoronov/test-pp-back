@@ -19,5 +19,5 @@ type Prediction struct {
 
 type AdjustedStockData struct {
 	Date string     `json:"date"`
-	Data [4]float64 `json:"data"`
+	Data [4]float32 `json:"data"`
 }

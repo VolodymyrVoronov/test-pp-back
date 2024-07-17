@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 	"test-pp-back/models"
 	"test-pp-back/utils"
@@ -168,9 +169,16 @@ func CreatePredictionHandler(c *gin.Context) {
 	lastDate := dates[len(dates)-1]
 	predictions := utils.PredictPricesForGivenDays(slope, intercept, lastDate, convertedDays)
 
+	htmlGraphContent, err := os.ReadFile("graphs/graph.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading graph file"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"slope":       slope,
 		"intercept":   intercept,
 		"predictions": predictions,
+		"graph":       string(htmlGraphContent),
 	})
 }

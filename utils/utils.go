@@ -90,8 +90,18 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 
 	var adjustedStockData []models.AdjustedStockData
 
+	// parse this "2006-01-02" or "2006/01/02"
+
 	for _, stock := range stocks {
-		date, err := time.Parse("2006-01-02", stock.Date)
+		formatToParse := "2006-01-02"
+
+		if strings.Contains(stock.Date, "/") {
+			formatToParse = "02/01/2006"
+		} else if strings.Contains(stock.Date, "-") {
+			formatToParse = "2006-01-02"
+		}
+
+		date, err := time.Parse(formatToParse, stock.Date)
 		if err != nil {
 			fmt.Println("Error parsing date:", err)
 			continue
@@ -101,7 +111,7 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 
 		newStockData := models.AdjustedStockData{
 			Date: formattedDate,
-			Data: [4]float64{stock.Open, stock.High, stock.Low, stock.Close},
+			Data: [4]float32{float32(stock.Open), float32(stock.Close), float32(stock.Low), float32(stock.High)},
 		}
 
 		adjustedStockData = append(adjustedStockData, newStockData)
@@ -115,9 +125,6 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 	}
 
 	kline.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{
-			Title: "Stock Graph",
-		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			SplitNumber: 20,
 		}),
@@ -138,7 +145,7 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 		}),
 	)
 
-	// kline.SetXAxis(x).AddSeries("kline", y)
+	kline.SetXAxis(x).AddSeries("", y)
 
 	return kline
 }
@@ -150,8 +157,7 @@ func CreateGraphFile(stocks []models.StockData) error {
 		DrawStockGraph(stocks),
 	)
 
-	dynamicFileName := time.Now().Format("2006-01-02_15-04-05")
-	graphFileName := fmt.Sprintf("graphs/%s.html", dynamicFileName)
+	graphFileName := "graphs/graph.html"
 
 	files, err := os.ReadDir("graphs")
 	if err != nil {
@@ -168,9 +174,9 @@ func CreateGraphFile(stocks []models.StockData) error {
 
 		return err
 	}
-	// defer file.Close()
+	defer file.Close()
 
-	page.Render(io.MultiWriter(file))
+	page.Render(io.Writer(file))
 
 	return nil
 }
