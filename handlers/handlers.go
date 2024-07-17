@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"test-pp-back/models"
+	"test-pp-back/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -133,4 +135,36 @@ func CheckAuthHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Authenticated"})
+}
+
+func CreatePredictionHandler(c *gin.Context) {
+	days := c.Query("days")
+
+	convertedDays, err := strconv.Atoi(days)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid days"})
+		return
+	}
+
+	var stockRequest models.StockRequest
+	if err := c.BindJSON(&stockRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	dates, closingPrices, err := utils.ExtractData(stockRequest.Stocks)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error extracting data"})
+		return
+	}
+
+	slope, intercept := utils.LinearRegression(dates, closingPrices)
+	lastDate := dates[len(dates)-1]
+	predictions := utils.PredictPricesForGivenDays(slope, intercept, lastDate, convertedDays)
+
+	c.JSON(http.StatusOK, gin.H{
+		"slope":       slope,
+		"intercept":   intercept,
+		"predictions": predictions,
+	})
 }

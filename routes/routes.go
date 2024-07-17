@@ -17,4 +17,6 @@ func RegisterRoutes(server *gin.Engine) {
 	auth.GET("/verify", handlers.VerifyHandler)
 	auth.GET("/check-auth", handlers.CheckAuthHandler)
 
+	pp := server.Group("/pp")
+	pp.POST("/predict", handlers.CreatePredictionHandler)
 }
