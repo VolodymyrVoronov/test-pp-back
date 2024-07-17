@@ -143,7 +143,13 @@ func DrawStockGraph(stocks []models.StockData) *charts.Kline {
 		}),
 	)
 
-	kline.SetXAxis(x).AddSeries("", y)
+	kline.SetXAxis(x).AddSeries("", y, charts.WithItemStyleOpts(
+		opts.ItemStyle{
+			Color:        "#47b262",
+			Color0:       "#e85558",
+			BorderColor:  "#47b262",
+			BorderColor0: "#e85558",
+		}))
 
 	return kline
 }
